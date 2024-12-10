@@ -23,6 +23,11 @@
 //! - Configuration of post-reset state (default behavior after power-on and software reset).
 //! - Blocking API support.
 //!
+//! ## Features
+//!
+//! - `defmt`: Enables logging using the `defmt` framework.
+//! - `log`: Enables logging using the `log` framework.
+//!
 //! ## Supported devices: HDC3020, HDC3021, HDC3022, HDC3020-Q1, HDC3021-Q1, HDC3022-Q1
 //!
 //! The following description is copied from the manufacturer's datasheet:
@@ -97,6 +102,9 @@
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
 #![no_std]
+
+#[cfg(all(feature = "defmt", feature = "log"))]
+compile_error!("Features \"defmt\" and \"log\" are mutually exclusive and cannot be enabled together");
 
 mod device_impl;
 mod hw_def;

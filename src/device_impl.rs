@@ -4,6 +4,19 @@ use crate::types::*;
 use crc::{Crc, CRC_8_NRSC_5};
 use embedded_hal_async::{delay::DelayNs, i2c::I2c};
 
+#[cfg(feature = "defmt")]
+use defmt::{trace, warn};
+#[cfg(feature = "log")]
+use log::{trace, warn};
+#[cfg(not(any(feature = "defmt", feature = "log")))]
+macro_rules! trace {
+    ($($arg:tt)*) => {};
+}
+#[cfg(not(any(feature = "defmt", feature = "log")))]
+macro_rules! warn {
+    ($($arg:tt)*) => {};
+}
+
 const CRC: crc::Crc<u8> = Crc::<u8>::new(&CRC_8_NRSC_5);
 
 // TODO: consider adding type state pattern around the state of the device.  When we start a
@@ -32,7 +45,7 @@ where
         } else {
             let mut read_buf = [0u8; 6];
             let read_buf_slice = &mut read_buf[0..(3 * num_vals)];
-            log::trace!("hdc302x::cmd_and_read(): read_buf_slice.len()={}", read_buf_slice.len());
+            trace!("hdc302x::cmd_and_read(): read_buf_slice.len()={}", read_buf_slice.len());
             if let Err(_) = self.i2c.write_read(self.i2c_addr.as_u8(), cmd_bytes, read_buf_slice).await {
                 // TODO: consider a timeout and/or retry limit
                 while let Err(_) = self.i2c.read(self.i2c_addr.as_u8(), read_buf_slice).await {
@@ -45,7 +58,7 @@ where
                 let read_crc = &read_buf[ii*3+2];
                 let crc_expect = CRC.checksum(read_word);
                 if *read_crc != crc_expect {
-                    log::warn!("hdc302x::cmd_and_read(): crc mismatch word {ii}/{num_vals}: read_buf={read_buf:?}, read_word={read_word:?}, read_crc={read_crc}, crc_expect={crc_expect}");
+                    warn!("hdc302x::cmd_and_read(): crc mismatch word {ii}/{num_vals}: read_buf={read_buf:?}, read_word={read_word:?}, read_crc={read_crc}, crc_expect={crc_expect}");
                     return Err(Error::CrcMismatch);
                 }
                 read_vals[ii] = (read_word[0] as u16) << 8 | read_word[1] as u16;
