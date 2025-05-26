@@ -1,8 +1,9 @@
 //! This is a platform-agnostic Rust driver for the HDC3020, HDC3021, HDC3022, HDC3020-Q1,
 //! HDC3021-Q1 and HDC3022-Q1 low-power humidity and temperature digital sensors using the
-//! [`embedded-hal-async`] traits.  This is current no support for a blocking API.  This driver was
-//! inspired by [Diego Barrios Romero's hdc20xx-rs driver](https://github.com/eldruin/hdc20xx-rs).
+//! [`embedded-hal`] or [`embedded-hal-async`] traits.  This driver was inspired by
+//! [Diego Barrios Romero's hdc20xx-rs driver](https://github.com/eldruin/hdc20xx-rs).
 //!
+//! [`embedded-hal`]: https://github.com/rust-embedded/embedded-hal/tree/master/embedded-hal
 //! [`embedded-hal-async`]: https://github.com/rust-embedded/embedded-hal/tree/master/embedded-hal-async
 //!
 //! This driver allows you to:
@@ -15,7 +16,8 @@
 //! - Read the manufacturer ID.
 //! - Read the device serial number.
 //! - Read and optionally clear the device status bits.
-//! - async support.
+//! - blocking API support.
+//! - async API support.
 //!
 //! This driver does not yet support the following device features:
 //! - Alerts (read/write and non-volatile storage of setpoints).
@@ -25,6 +27,9 @@
 //!
 //! ## Features
 //!
+//! - 'async`: Enables async API.
+//! - `blocking`: Enables blocking API.
+//! - `crc`: Checks received CRC against computed CRC.
 //! - `defmt`: Enables logging using the `defmt` framework.
 //! - `log`: Enables logging using the `log` framework.
 //!
@@ -54,13 +59,13 @@
 //!   [HDC302x](https://www.ti.com/lit/ds/symlink/hdc3020.pdf)
 //!   [HDC302x-Q1](https://www.ti.com/lit/ds/symlink/hdc3020-q1.pdf)
 //!
-//! To use this driver, import this crate and an `embedded_hal_async` implementation,
-//! then instantiate the device.
+//! To use this driver, import this crate and an `embedded_hal` or `embedded_hal_async`
+//! implementation, then instantiate the device.
 //!
-//! ## Example:
+//! ## Async Example:
 //!
 //! ```
-//! use hdc302x_async::{
+//! use hdc302x::{
 //!     Datum,
 //!     Hdc302x,
 //!     I2cAddr,
@@ -98,10 +103,55 @@
 //!         hdc302x.auto_read(HdcAutoReadTarget::MaxRelHumid).await.unwrap().humidity_percent().unwrap());
 //! }
 //! ```
+//! 
+//! ## Blocking Example:
+//!
+//! ```
+//! use hdc302x::{
+//!     Datum,
+//!     Hdc302x,
+//!     I2cAddr,
+//!     LowPowerMode,
+//! };
+//!
+//! // Platform-specific
+//! let i2c = /* embedded_hal::i2c::I2c instance */;
+//! let delay = /* embedded_hal::delay::DelayNs instance */;
+//!
+//! // Hdc302x
+//! let mut hdc302x = Hdc302x::new(i2c, delay, I2cAddr::Addr00);
+//!
+//! // Read and display a one-shot sample
+//! let raw_datum = hdc302x.one_shot(LowPowerMode::lowest_noise()).unwrap();
+//! println!("{:3} %RH, {:0.1} °C",
+//!     raw_datum.humidity_percent(),
+//!     raw_datum.centigrade());
+//!
+//! // Use auto mode to continuously sample and track the min/max temperature
+//! loop {
+//!     // stop and restart auto_mode to reset min/max values
+//!     hdc302x.auto_stop().unwrap();
+//!     hdc302x.auto_start(HdcSampleRate::Auto500mHz, HdcLowPowerMode::lowest_power()).unwrap();
+//!
+//!     // Platform-specific: sleep a while
+//!     sleep_secs(60);
+//!
+//!     // fetch the results from the hdc302x sensor
+//!     println!("min/max temperature: {:0.1} °C / {:0.1} °C",
+//!         hdc302x.auto_read(HdcAutoReadTarget::MinTemp).unwrap().centigrade().unwrap(),
+//!         hdc302x.auto_read(HdcAutoReadTarget::MaxTemp).unwrap().centigrade().unwrap());
+//!     println!("min/max relative humidity: {:0.1} % / {:0.1} %",
+//!         hdc302x.auto_read(HdcAutoReadTarget::MinRelHumid).unwrap().humidity_percent().unwrap(),
+//!         hdc302x.auto_read(HdcAutoReadTarget::MaxRelHumid).unwrap().humidity_percent().unwrap());
+//! }
+//! ```
 
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
 #![no_std]
+
+#[cfg(not(any(feature = "async", feature = "blocking")))]
+compile_error!("At least one of \"async\" and \"blocking\" features must be enabled");
 
 #[cfg(all(feature = "defmt", feature = "log"))]
 compile_error!("Features \"defmt\" and \"log\" are mutually exclusive and cannot be enabled together");

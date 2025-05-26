@@ -18,6 +18,7 @@ pub enum Error<E> {
     /// Invalid input data provided
     InvalidInputData,
     /// Failure of a checksum from the device was detected
+    #[cfg(feature = "crc")]
     CrcMismatch,
 }
 
