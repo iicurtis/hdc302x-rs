@@ -2,6 +2,9 @@ use crate::hw_def::*;
 
 use core::fmt;
 
+#[cfg(feature="defmt")]
+use defmt::Format;
+
 /// HDC302x(-Q1) device driver
 #[derive(Debug)]
 pub struct Hdc302x<I2C, Delay> {
@@ -11,6 +14,7 @@ pub struct Hdc302x<I2C, Delay> {
 }
 
 /// All possible errors in this crate
+#[cfg_attr(feature = "defmt", derive(Format))]
 #[derive(Debug)]
 pub enum Error<E> {
     /// I²C communication error
@@ -23,6 +27,7 @@ pub enum Error<E> {
 }
 
 /// Raw (still in u16 format) temperature and/or humidity from the device
+#[cfg_attr(feature = "defmt", derive(Format))]
 #[derive(Debug)]
 pub enum RawDatum {
     /// temerature and relative humidity from one-shot or auto mode
@@ -70,6 +75,7 @@ impl RawDatum {
 }
 
 /// Raw (still in u16 format) temperature and relative humidity from the device
+#[cfg_attr(feature = "defmt", derive(Format))]
 #[derive(Debug)]
 pub struct RawTempAndRelHumid{
     /// unprocessed temperature
@@ -93,6 +99,7 @@ impl RawTempAndRelHumid {
 }
 
 /// Temp and/or humidity from the device after conversion
+#[cfg_attr(feature = "defmt", derive(Format))]
 #[derive(Debug)]
 pub enum Datum {
     /// temerature and relative humidity from one-shot or auto mode
@@ -119,6 +126,7 @@ impl From<&RawDatum> for Datum {
 }
 
 /// Temp and relative humidity from the device after conversion
+#[cfg_attr(feature = "defmt", derive(Format))]
 #[derive(Debug)]
 pub struct TempAndRelHumid {
     /// degrees centigrade
@@ -138,6 +146,7 @@ impl From<&RawTempAndRelHumid> for TempAndRelHumid {
     }
 }
 /// Temp after conversion
+#[cfg_attr(feature = "defmt", derive(Format))]
 #[derive(Debug)]
 pub struct Temp{
     /// degrees centigrade
@@ -155,6 +164,7 @@ impl From<u16> for Temp {
 }
 
 /// Status bits from the device
+#[cfg_attr(feature = "defmt", derive(Format))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct StatusBits {
     raw: u16,
@@ -241,6 +251,7 @@ impl fmt::Display for StatusBits {
 
 
 /// Serial number of the device
+#[cfg_attr(feature = "defmt", derive(Format))]
 pub struct SerialNumber(pub [u8; 6]);
 impl fmt::Display for SerialNumber {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -252,6 +263,7 @@ impl fmt::Display for SerialNumber {
 }
 
 /// Manufacturer ID of the device
+#[cfg_attr(feature = "defmt", derive(Format))]
 #[derive(Clone, Copy)]
 pub enum ManufacturerId {
     /// Texas Instruments
